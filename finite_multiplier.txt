@@ -1,0 +1,126 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date:    00:21:57 03/20/2019 
+// Design Name: 
+// Module Name:    finite_multiplier 
+// Project Name: 
+// Target Devices: 
+// Tool versions: 
+// Description: 
+//
+// Dependencies: 
+//
+// Revision: 
+// Revision 0.01 - File Created
+// Additional Comments: 
+//
+//////////////////////////////////////////////////////////////////////////////////
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date:    23:23:16 03/19/2019 
+// Design Name: 
+// Module Name:    multiplier 
+// Project Name: 
+// Target Devices: 
+// Tool versions: 
+// Description: 
+//
+// Dependencies: 
+//
+// Revision: 
+// Revision 0.01 - File Created
+// Additional Comments: 
+//
+//////////////////////////////////////////////////////////////////////////////////
+module finite_multiplier(Res,counter,ready,A_input,B_input,start,reset,clock);
+//port_declaration
+output [4:0] Res;
+output [2:0] counter;
+output ready;
+input [4:0] A_input,B_input;
+input start,reset,clock;
+
+//parameter
+parameter S_idle  = 4'b0001,
+			 S_shift = 4'b0010,
+			 S_1     = 4'b0100,
+			 S_2     = 4'b1000;
+
+reg [3:0] state,next_state;
+reg [4:0] A,B;
+reg [4:0] Res,Poly;
+reg [2:0] counter;
+reg load,shift_A,shift_Res,XOR_B,XOR_Poly,decrement_counter;
+
+//Miscellaneous combinational logic
+wire zero = (counter==0);
+wire ready = (state==S_idle);
+
+//control_unit
+always@(posedge clock, negedge reset)
+	if(~reset) state <= S_idle;
+	else state <= next_state;
+	
+always@(state,start,zero,A[3],Res[4])
+	begin
+		next_state = S_idle;
+		load = 0;
+		shift_A = 0;
+		shift_Res = 0;
+		XOR_B = 0;
+		XOR_Poly = 0;
+		decrement_counter = 0;
+		case(state)
+			S_idle:  if(start) begin next_state = S_shift; load = 1; end
+			S_shift: begin next_state = S_1; shift_Res = 1; end	
+			S_1:	   begin next_state = S_2; shift_A = 1; decrement_counter = 1; if(A[3]) XOR_B = 1; end
+			S_2:	   begin if(zero) begin next_state = S_idle; if(Res[4]) XOR_Poly = 1; end
+						      if(~zero) begin next_state = S_shift; if(Res[4]) XOR_Poly = 1; end
+						end	
+			default: next_state = S_idle;
+		endcase
+	end
+
+//datapath_unit
+always@(posedge clock)begin
+	if(load)	
+		begin
+		counter <= 3'b100;
+		Poly <= 5'b10011;
+		Res <= 5'b00000;
+		A <= A_input;
+		B <= B_input;
+		end
+	if(shift_A)
+		A <= A<<1;
+	if(XOR_B)
+		Res <= Res^B;
+	if(XOR_Poly)
+		Res <= Res^Poly;
+	if(decrement_counter)
+		counter <= counter - 1;
+	if(shift_Res)
+		Res <= Res<<1;
+	end	
+		
+
+endmodule
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,32 @@
+module t_finite_multiplier;
+wire [4:0] Res;
+wire [2:0] counter;
+wire ready;
+reg [4:0] A_input,B_input;
+reg start,reset,clock;
+
+finite_multiplier m1(Res,counter,ready,A_input,B_input,start,reset,clock);
+
+initial begin #300 $finish; end
+
+initial 
+	begin
+	clock = 0;
+	forever #5 clock = ~clock;
+	end
+
+initial
+	begin
+	reset = 1;
+	#1 reset = 0;
+	#2 reset = 1; start = 1;
+	#10 start = 0;
+	end
+
+initial 
+	begin
+	A_input = 5'b00011;
+	B_input = 5'b00001;
+	end
+
+endmodule
